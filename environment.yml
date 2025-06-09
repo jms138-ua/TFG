@@ -1,0 +1,22 @@
+name: T4D
+channels:
+    - pytorch
+    - conda-forge
+    - defaults
+dependencies:
+    - python==3.8
+    - jupyter
+    - ipykernel
+    - pytorch>=1.8
+    - torchvision
+    - cpuonly
+    - numpy
+    - pandas
+    - matplotlib
+    - scipy
+    - opencv
+    - trimesh
+    - pip
+
+#conda env create --file=environment.yml
+#conda env remove --name T4D

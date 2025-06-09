@@ -1,0 +1,60 @@
+<!DOCTYPE MeshLabDocument>
+<MeshLabProject>
+ <MeshGroup>
+  <MLMesh label="Model.obj" filename="Model.obj" idInFile="-1" visible="1">
+   <MLMatrix44>
+1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 
+</MLMatrix44>
+  </MLMesh>
+ </MeshGroup>
+ <RasterGroup>
+  <MLRaster label="/home/deep/Desktop/Calibrado/testJorge4x6/831612070293-Color-1-calibrated.png">
+   <VCGCamera ViewportPx="1280 720" PixelSizeMm="0.01 0.01" CenterPx="640 360" FocalMm="9.1760597229003906" LensDistortion="0 0" RotationMatrix="1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 " TranslationVector="0 0 0 1" CameraType="0" BinaryData="0"/>
+   <Plane fileName="831612070293-Color-1-calibrated.png" semantic="1"/>
+  </MLRaster>
+  <MLRaster label="/home/deep/Desktop/Calibrado/testJorge4x6/829212071391-Color-1-calibrated.png">
+   <VCGCamera ViewportPx="1280 720" PixelSizeMm="0.01 0.01" CenterPx="640 360" FocalMm="9.1760597229003906" LensDistortion="0 0" RotationMatrix="0.792529 -0.473196 -0.384686 0 -0.459436 -0.0484868 -0.886887 0 0.401019 0.879622 -0.25583 0 0 0 0 1 " TranslationVector="-0.277198 -0.810603 -0.624734 1" CameraType="0" BinaryData="0"/>
+   <Plane fileName="829212071391-Color-1-calibrated.png" semantic="1"/>
+  </MLRaster>
+  <MLRaster label="/home/deep/Desktop/Calibrado/testJorge4x6/829212072264-Color-1-calibrated.png">
+   <VCGCamera ViewportPx="1280 720" PixelSizeMm="0.01 0.01" CenterPx="640 360" FocalMm="9.1760597229003906" LensDistortion="0 0" RotationMatrix="0.750452 0.466344 -0.468343 0 0.480682 0.10124 0.871031 0 0.453615 -0.878791 -0.148188 0 0 0 0 1 " TranslationVector="-0.335602 0.679555 -0.73251 1" CameraType="0" BinaryData="0"/>
+   <Plane fileName="829212072264-Color-1-calibrated.png" semantic="1"/>
+  </MLRaster>
+  <MLRaster label="/home/deep/Desktop/Calibrado/testJorge4x6/728312070655-Color-1-calibrated.png">
+   <VCGCamera ViewportPx="1280 720" PixelSizeMm="0.01 0.01" CenterPx="640 360" FocalMm="9.1760597229003906" LensDistortion="0 0" RotationMatrix="0.639386 -0.0201976 -0.76862 0 -0.0605632 0.995226 -0.0765323 0 0.766497 0.0954839 0.63511 0 0 0 0 1 " TranslationVector="-0.617093 -0.116528 -1.36414 1" CameraType="0" BinaryData="0"/>
+   <Plane fileName="728312070655-Color-1-calibrated.png" semantic="1"/>
+  </MLRaster>
+  <MLRaster label="/home/deep/Desktop/Calibrado/testJorge4x6/829212072262-Color-1-calibrated.png">
+   <VCGCamera ViewportPx="1280 720" PixelSizeMm="0.01 0.01" CenterPx="640 360" FocalMm="9.1760597229003906" LensDistortion="0 0" RotationMatrix="0.826938 -0.470065 -0.308565 0 0.374702 0.051511 0.925713 0 -0.419251 -0.881127 0.21873 0 0 0 0 1 " TranslationVector="0.703093 0.67611 -1.17212 1" CameraType="0" BinaryData="0"/>
+   <Plane fileName="829212072262-Color-1-calibrated.png" semantic="1"/>
+  </MLRaster>
+  <MLRaster label="/home/deep/Desktop/Calibrado/testJorge4x6/815412070524-Color-1-calibrated.png">
+   <VCGCamera ViewportPx="1280 720" PixelSizeMm="0.01 0.01" CenterPx="640 360" FocalMm="9.1760597229003906" LensDistortion="0 0" RotationMatrix="0.826603 0.438137 -0.353218 0 -0.39854 0.0125778 -0.917064 0 -0.397358 0.89882 0.185013 0 0 0 0 1 " TranslationVector="0.754844 -0.772774 -1.06355 1" CameraType="0" BinaryData="0"/>
+   <Plane fileName="815412070524-Color-1-calibrated.png" semantic="1"/>
+  </MLRaster>
+  <MLRaster label="/home/deep/Desktop/Calibrado/testJorge4x6/836612071402-Color-1-calibrated.png">
+   <VCGCamera ViewportPx="1280 720" PixelSizeMm="0.01 0.01" CenterPx="640 360" FocalMm="9.1760597229003906" LensDistortion="0 0" RotationMatrix="-0.0679094 0.997528 -0.01806 0 0.690848 0.0339558 -0.722202 0 -0.719803 -0.0615214 -0.691446 0 0 0 0 1 " TranslationVector="1.0514 -0.0146615 -0.38137 1" CameraType="0" BinaryData="0"/>
+   <Plane fileName="836612071402-Color-1-calibrated.png" semantic="1"/>
+  </MLRaster>
+  <MLRaster label="/home/deep/Desktop/Calibrado/testJorge4x6/848312070429-Color-1-calibrated.png">
+   <VCGCamera ViewportPx="1280 720" PixelSizeMm="0.01 0.01" CenterPx="640 360" FocalMm="9.1760597229003906" LensDistortion="0 0" RotationMatrix="0.0353637 -0.999235 0.0166784 0 0.995414 0.0367034 0.088335 0 -0.08888 0.0134785 0.995951 0 0 0 0 1 " TranslationVector="0.441834 -0.095448 -1.90117 1" CameraType="0" BinaryData="0"/>
+   <Plane fileName="848312070429-Color-1-calibrated.png" semantic="1"/>
+  </MLRaster>
+  <MLRaster label="/home/deep/Desktop/Calibrado/testJorge4x6/846112070086-Color-1-calibrated.png">
+   <VCGCamera ViewportPx="1280 720" PixelSizeMm="0.01 0.01" CenterPx="640 360" FocalMm="9.1760597229003906" LensDistortion="0 0" RotationMatrix="0.716042 0.0134104 -0.697928 0 0.0286338 -0.999538 0.0101712 0 -0.697469 -0.0272679 -0.716095 0 0 0 0 1 " TranslationVector="1.59245 0.000452399 -0.613503 1" CameraType="0" BinaryData="0"/>
+   <Plane fileName="846112070086-Color-1-calibrated.png" semantic="1"/>
+  </MLRaster>
+  <MLRaster label="/home/deep/Desktop/Calibrado/testJorge4x6/728312070946-Color-1-calibrated.png">
+   <VCGCamera ViewportPx="1280 720" PixelSizeMm="0.01 0.01" CenterPx="640 360" FocalMm="9.1760597229003906" LensDistortion="0 0" RotationMatrix="0.987951 -0.00726482 0.154592 0 0.011601 0.999563 -0.0271632 0 -0.154327 0.0286301 0.987604 0 0 0 0 1 " TranslationVector="1.09888 -0.0990574 -1.9999 1" CameraType="0" BinaryData="0"/>
+   <Plane fileName="728312070946-Color-1-calibrated.png" semantic="1"/>
+  </MLRaster>
+  <MLRaster label="/home/deep/Desktop/Calibrado/testJorge4x6/848312070416-Color-1-calibrated.png">
+   <VCGCamera ViewportPx="1280 720" PixelSizeMm="0.01 0.01" CenterPx="640 360" FocalMm="9.1760597229003906" LensDistortion="0 0" RotationMatrix="0.866587 -0.397799 -0.301301 0 0.322331 -0.0147244 0.946512 0 -0.380959 -0.917354 0.115463 0 0 0 0 1 " TranslationVector="1.31763 0.683968 -1.3538 1" CameraType="0" BinaryData="0"/>
+   <Plane fileName="848312070416-Color-1-calibrated.png" semantic="1"/>
+  </MLRaster>
+  <MLRaster label="/home/deep/Desktop/Calibrado/testJorge4x6/848312070090-Color-1-calibrated.png">
+   <VCGCamera ViewportPx="1280 720" PixelSizeMm="0.01 0.01" CenterPx="640 360" FocalMm="9.1760597229003906" LensDistortion="0 0" RotationMatrix="0.879962 0.367802 -0.300647 0 -0.318187 -0.0135923 -0.94793 0 -0.352737 0.929804 0.10507 0 0 0 0 1 " TranslationVector="1.3464 -0.786392 -1.25301 1" CameraType="0" BinaryData="0"/>
+   <Plane fileName="848312070090-Color-1-calibrated.png" semantic="1"/>
+  </MLRaster>
+ </RasterGroup>
+</MeshLabProject>

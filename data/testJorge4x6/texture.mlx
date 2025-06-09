@@ -1,0 +1,15 @@
+<!DOCTYPE FilterScript>
+<FilterScript>
+ <filter name="Parameterization + texturing from registered rasters">
+  <Param tooltip="Specifies the dimension of the generated texture" name="textureSize" description="Texture size" type="RichInt" value="2048"/>
+  <Param tooltip="Specifies the name of the file into which the texture image will be saved" name="textureName" description="Texture name" type="RichString" value="test.png"/>
+  <Param tooltip="If true, the final texture is corrected so as to ensure seamless transitions" name="colorCorrection" description="Color correction" type="RichBool" value="true"/>
+  <Param tooltip="It is the radius (in pixel) of the kernel that is used to compute the difference between corresponding texels in different rasters. Default is 1 that generate a 3x3 kernel. Highest values increase the robustness of the color correction process in the case of strong image-to-geometry misalignments" name="colorCorrectionFilterSize" description="Color correction filter" type="RichInt" value="1"/>
+  <Param tooltip="Includes a weight accounting for the distance to the camera during the computation of reference images" name="useDistanceWeight" description="Use distance weight" type="RichBool" value="false"/>
+  <Param tooltip="Includes a weight accounting for the distance to the image border during the computation of reference images" name="useImgBorderWeight" description="Use image border weight" type="RichBool" value="false"/>
+  <Param tooltip="If true, alpha channel of the image is used as additional weight. In this way it is possible to mask-out parts of the images that should not be projected on the mesh. Please note this is not a transparency effect, but just influences the weigthing between different images" name="useAlphaWeight" description="Use image alpha weight" type="RichBool" value="true"/>
+  <Param tooltip="Remove all patches compound of a single triangle by aggregating them to adjacent patches" name="cleanIsolatedTriangles" description="Clean isolated triangles" type="RichBool" value="true"/>
+  <Param tooltip="If true, texture coordinates are stretched so as to cover the full interval [0,1] for both directions" name="stretchingAllowed" description="UV stretching" type="RichBool" value="false"/>
+  <Param tooltip="Extra boundary to add to each patch before packing in texture space (in pixels)" name="textureGutter" description="Texture gutter" type="RichInt" value="4"/>
+ </filter>
+</FilterScript>

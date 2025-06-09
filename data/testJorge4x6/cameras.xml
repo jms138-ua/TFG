@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document version="1.2.0">
+<chunk>
+	<sensors>
+		<sensor id="831612070293" label="unknown0" type="frame">
+			<resolution width="1280" height="720"/>
+			<property name="pixel_width" value="1"/>
+			<property name="pixel_height" value="1"/>
+			<property name="fixed" value="false"/>
+			<calibration type="frame" class="adjusted">
+				<resolution width="1280" height="720"/>
+				<fx>923.754</fx>
+				<fy>923.783</fy>
+				<cx>654.161</cx>
+				<cy>358.283</cy>
+				<k1>0</k1>
+				<k2>0</k2>
+				<p1>0</p1>
+				<p2>0</p2>
+			</calibration>
+		</sensor>
+		<sensor id="829212071391" label="unknown0" type="frame">
+			<resolution width="1280" height="720"/>
+			<property name="pixel_width" value="1"/>
+			<property name="pixel_height" value="1"/>
+			<property name="fixed" value="false"/>
+			<calibration type="frame" class="adjusted">
+				<resolution width="1280" height="720"/>
+				<fx>920.263</fx>
+				<fy>919.969</fy>
+				<cx>651.8</cx>
+				<cy>358.61</cy>
+				<k1>0</k1>
+				<k2>0</k2>
+				<p1>0</p1>
+				<p2>0</p2>
+			</calibration>
+		</sensor>
+		<sensor id="829212072264" label="unknown0" type="frame">
+			<resolution width="1280" height="720"/>
+			<property name="pixel_width" value="1"/>
+			<property name="pixel_height" value="1"/>
+			<property name="fixed" value="false"/>
+			<calibration type="frame" class="adjusted">
+				<resolution width="1280" height="720"/>
+				<fx>926.453</fx>
+				<fy>926.889</fy>
+				<cx>658.154</cx>
+				<cy>353.209</cy>
+				<k1>0</k1>
+				<k2>0</k2>
+				<p1>0</p1>
+				<p2>0</p2>
+			</calibration>
+		</sensor>
+		<sensor id="728312070655" label="unknown0" type="frame">
+			<resolution width="1280" height="720"/>
+			<property name="pixel_width" value="1"/>
+			<property name="pixel_height" value="1"/>
+			<property name="fixed" value="false"/>
+			<calibration type="frame" class="adjusted">
+				<resolution width="1280" height="720"/>
+				<fx>921.892</fx>
+				<fy>921.948</fy>
+				<cx>654.951</cx>
+				<cy>363.598</cy>
+				<k1>0</k1>
+				<k2>0</k2>
+				<p1>0</p1>
+				<p2>0</p2>
+			</calibration>
+		</sensor>
+		<sensor id="829212072262" label="unknown0" type="frame">
+			<resolution width="1280" height="720"/>
+			<property name="pixel_width" value="1"/>
+			<property name="pixel_height" value="1"/>
+			<property name="fixed" value="false"/>
+			<calibration type="frame" class="adjusted">
+				<resolution width="1280" height="720"/>
+				<fx>924.27</fx>
+				<fy>924.293</fy>
+				<cx>649.88</cx>
+				<cy>361.113</cy>
+				<k1>0</k1>
+				<k2>0</k2>
+				<p1>0</p1>
+				<p2>0</p2>
+			</calibration>
+		</sensor>
+		<sensor id="815412070524" label="unknown0" type="frame">
+			<resolution width="1280" height="720"/>
+			<property name="pixel_width" value="1"/>
+			<property name="pixel_height" value="1"/>
+			<property name="fixed" value="false"/>
+			<calibration type="frame" class="adjusted">
+				<resolution width="1280" height="720"/>
+				<fx>920.112</fx>
+				<fy>919.859</fy>
+				<cx>637.702</cx>
+				<cy>356.918</cy>
+				<k1>0</k1>
+				<k2>0</k2>
+				<p1>0</p1>
+				<p2>0</p2>
+			</calibration>
+		</sensor>
+		<sensor id="836612071402" label="unknown0" type="frame">
+			<resolution width="1280" height="720"/>
+			<property name="pixel_width" value="1"/>
+			<property name="pixel_height" value="1"/>
+			<property name="fixed" value="false"/>
+			<calibration type="frame" class="adjusted">
+				<resolution width="1280" height="720"/>
+				<fx>924.451</fx>
+				<fy>924.718</fy>
+				<cx>646.277</cx>
+				<cy>370.267</cy>
+				<k1>0</k1>
+				<k2>0</k2>
+				<p1>0</p1>
+				<p2>0</p2>
+			</calibration>
+		</sensor>
+		<sensor id="848312070429" label="unknown0" type="frame">
+			<resolution width="1280" height="720"/>
+			<property name="pixel_width" value="1"/>
+			<property name="pixel_height" value="1"/>
+			<property name="fixed" value="false"/>
+			<calibration type="frame" class="adjusted">
+				<resolution width="1280" height="720"/>
+				<fx>924.602</fx>
+				<fy>924.88</fy>
+				<cx>636.746</cx>
+				<cy>358.753</cy>
+				<k1>0</k1>
+				<k2>0</k2>
+				<p1>0</p1>
+				<p2>0</p2>
+			</calibration>
+		</sensor>
+		<sensor id="846112070086" label="unknown0" type="frame">
+			<resolution width="1280" height="720"/>
+			<property name="pixel_width" value="1"/>
+			<property name="pixel_height" value="1"/>
+			<property name="fixed" value="false"/>
+			<calibration type="frame" class="adjusted">
+				<resolution width="1280" height="720"/>
+				<fx>918.01</fx>
+				<fy>918.077</fy>
+				<cx>647.476</cx>
+				<cy>372.622</cy>
+				<k1>0</k1>
+				<k2>0</k2>
+				<p1>0</p1>
+				<p2>0</p2>
+			</calibration>
+		</sensor>
+		<sensor id="728312070946" label="unknown0" type="frame">
+			<resolution width="1280" height="720"/>
+			<property name="pixel_width" value="1"/>
+			<property name="pixel_height" value="1"/>
+			<property name="fixed" value="false"/>
+			<calibration type="frame" class="adjusted">
+				<resolution width="1280" height="720"/>
+				<fx>921.012</fx>
+				<fy>921.11</fy>
+				<cx>652.598</cx>
+				<cy>364.018</cy>
+				<k1>0</k1>
+				<k2>0</k2>
+				<p1>0</p1>
+				<p2>0</p2>
+			</calibration>
+		</sensor>
+		<sensor id="848312070416" label="unknown0" type="frame">
+			<resolution width="1280" height="720"/>
+			<property name="pixel_width" value="1"/>
+			<property name="pixel_height" value="1"/>
+			<property name="fixed" value="false"/>
+			<calibration type="frame" class="adjusted">
+				<resolution width="1280" height="720"/>
+				<fx>913.135</fx>
+				<fy>913.179</fy>
+				<cx>644.737</cx>
+				<cy>360.955</cy>
+				<k1>0</k1>
+				<k2>0</k2>
+				<p1>0</p1>
+				<p2>0</p2>
+			</calibration>
+		</sensor>
+		<sensor id="848312070090" label="unknown0" type="frame">
+			<resolution width="1280" height="720"/>
+			<property name="pixel_width" value="1"/>
+			<property name="pixel_height" value="1"/>
+			<property name="fixed" value="false"/>
+			<calibration type="frame" class="adjusted">
+				<resolution width="1280" height="720"/>
+				<fx>917.606</fx>
+				<fy>917.368</fy>
+				<cx>626.641</cx>
+				<cy>363.162</cy>
+				<k1>0</k1>
+				<k2>0</k2>
+				<p1>0</p1>
+				<p2>0</p2>
+			</calibration>
+		</sensor>
+	</sensors>
+	<cameras>
+		<camera id="831612070293" label="831612070293-Color-1-calibrated.png" sensor_id="831612070293" enabled="true">
+			<transform>1.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 0.0 1.0</transform>
+		</camera>
+		<camera id="829212071391" label="829212071391-Color-1-calibrated.png" sensor_id="829212071391" enabled="true">
+			<transform>0.7925289273262024 0.4594358503818512 -0.40101906657218933 0.2771981954574585 -0.47319623827934265 0.04848678782582283 -0.879621684551239 0.8106027841567993 -0.3846856951713562 0.8868865966796875 0.25583040714263916 0.6247343420982361 0.0 0.0 0.0 1.0</transform>
+		</camera>
+		<camera id="829212072264" label="829212072264-Color-1-calibrated.png" sensor_id="829212072264" enabled="true">
+			<transform>0.7504515051841736 -0.48068228363990784 -0.4536147713661194 0.3356020748615265 0.46634355187416077 -0.10123990476131439 0.8787909150123596 -0.67955482006073 -0.4683434069156647 -0.8710305690765381 0.1481875330209732 0.7325095534324646 0.0 0.0 0.0 1.0</transform>
+		</camera>
+		<camera id="728312070655" label="728312070655-Color-1-calibrated.png" sensor_id="728312070655" enabled="true">
+			<transform>0.6393855810165405 0.060563210397958755 -0.7664968371391296 0.6170930862426758 -0.02019760012626648 -0.995225727558136 -0.09548386931419373 0.11652784049510956 -0.768620491027832 0.0765322893857956 -0.635110080242157 1.3641358613967896 0.0 0.0 0.0 1.0</transform>
+		</camera>
+		<camera id="829212072262" label="829212072262-Color-1-calibrated.png" sensor_id="829212072262" enabled="true">
+			<transform>0.8269380927085876 -0.3747023344039917 0.4192506968975067 -0.7030934691429138 -0.47006455063819885 -0.051510971039533615 0.8811271786689758 -0.6761096119880676 -0.3085647225379944 -0.9257128238677979 -0.21873043477535248 1.172122836112976 0.0 0.0 0.0 1.0</transform>
+		</camera>
+		<camera id="815412070524" label="815412070524-Color-1-calibrated.png" sensor_id="815412070524" enabled="true">
+			<transform>0.826602578163147 0.39854007959365845 0.3973577916622162 -0.7548440098762512 0.438137412071228 -0.012577768415212631 -0.8988195061683655 0.7727743983268738 -0.35321781039237976 0.9170641303062439 -0.18501251935958862 1.0635461807250977 0.0 0.0 0.0 1.0</transform>
+		</camera>
+		<camera id="836612071402" label="836612071402-Color-1-calibrated.png" sensor_id="836612071402" enabled="true">
+			<transform>-0.06790938973426819 -0.6908480525016785 0.7198033928871155 -1.0514042377471924 0.9975275993347168 -0.03395582363009453 0.061521440744400024 0.01466149091720581 -0.018059968948364258 0.7222018241882324 0.6914461851119995 0.38136976957321167 0.0 0.0 0.0 1.0</transform>
+		</camera>
+		<camera id="848312070429" label="848312070429-Color-1-calibrated.png" sensor_id="848312070429" enabled="true">
+			<transform>0.03536371514201164 -0.9954139590263367 0.08888000249862671 -0.44183385372161865 -0.9992349147796631 -0.03670335188508034 -0.013478457927703857 0.09544801712036133 0.01667841151356697 -0.08833503723144531 -0.9959505796432495 1.9011677503585815 0.0 0.0 0.0 1.0</transform>
+		</camera>
+		<camera id="846112070086" label="846112070086-Color-1-calibrated.png" sensor_id="846112070086" enabled="true">
+			<transform>0.7160422205924988 -0.028633754700422287 0.6974689960479736 -1.5924482345581055 0.013410370796918869 0.9995376467704773 0.027267852798104286 -0.00045239925384521484 -0.6979275941848755 -0.010171163827180862 0.7160954475402832 0.6135026216506958 0.0 0.0 0.0 1.0</transform>
+		</camera>
+		<camera id="728312070946" label="728312070946-Color-1-calibrated.png" sensor_id="728312070946" enabled="true">
+			<transform>0.9879514575004578 -0.011601043865084648 0.15432699024677277 -1.0988802909851074 -0.007264822721481323 -0.9995629191398621 -0.028630098327994347 0.09905735403299332 0.15459151566028595 0.027163248509168625 -0.9876039624214172 1.9999029636383057 0.0 0.0 0.0 1.0</transform>
+		</camera>
+		<camera id="848312070416" label="848312070416-Color-1-calibrated.png" sensor_id="848312070416" enabled="true">
+			<transform>0.8665867447853088 -0.32233095169067383 0.38095876574516296 -1.3176307678222656 -0.39779889583587646 0.014724409207701683 0.9173538088798523 -0.6839683055877686 -0.301300972700119 -0.9465118646621704 -0.11546251177787781 1.353804111480713 0.0 0.0 0.0 1.0</transform>
+		</camera>
+		<camera id="848312070090" label="848312070090-Color-1-calibrated.png" sensor_id="848312070090" enabled="true">
+			<transform>0.8799617886543274 0.3181874752044678 0.35273677110671997 -1.3463990688323975 0.3678019046783447 0.013592290692031384 -0.9298041462898254 0.7863924503326416 -0.30064651370048523 0.9479297399520874 -0.10506981611251831 1.2530081272125244 0.0 0.0 0.0 1.0</transform>
+		</camera>
+	</cameras>
+</chunk>
+</document>
