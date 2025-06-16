@@ -1,0 +1,6 @@
+[submodule "libs/STAR"]
+	path = libs/STAR
+	url = https://github.com/ahmedosman/STAR
+[submodule "libs/detectron2"]
+	path = libs/detectron2
+	url = https://github.com/facebookresearch/detectron2
