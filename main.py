@@ -161,10 +161,19 @@ def load_star():
     star_model = star(pose, shape, trans)
     vstar = star_model.detach().numpy()[0]
 
-    return vstar, smpl_vert_segmentation
+    return star, (pose, shape, trans), star_model, vstar, smpl_vert_segmentation
 
 
 #==================================================================================================
+
+
+def extract_submesh_faces(faces_full, vids):
+    idx_map = {v: i for i, v in enumerate(np.array(vids))}
+    return np.array([
+        [idx_map[v] for v in face]
+            for face in faces_full
+                if all(v in idx_map for v in face)
+    ])
 
 
 def fixed_coloring_mask(segm_mask):
@@ -201,10 +210,13 @@ def fixed_coloring_parts(dict_vids):
     return vertices_color
 
 
+#==================================================================================================
+
+
 def smooth_labels(segm_mask, min_component_size=81, structure_size=(3,3)):
-    """
+    '''
     Reduces noisy parts
-    """
+    '''
 
     smooth_segm_mask = np.copy(segm_mask)
 
@@ -267,15 +279,15 @@ def correct_anatomical_anomalies(segm_mask, min_pixels_for_anomaly=100, proximit
         frozenset({"Head", "Upper Leg"}),
     }
 
-    correct_mask = np.copy(segm_mask)
+    correct_segm_mask = np.copy(segm_mask)
 
     #Extract information from each part
     pids_info = {} 
-    for pid in np.unique(correct_mask):
+    for pid in np.unique(correct_segm_mask):
         if pid not in DP_BODY_PARTS:
             continue
 
-        part_mask = (correct_mask == pid)
+        part_mask = (correct_segm_mask == pid)
 
         part_size = np.sum(part_mask)
         if part_size < min_pixels_for_anomaly:
@@ -305,9 +317,9 @@ def correct_anatomical_anomalies(segm_mask, min_pixels_for_anomaly=100, proximit
     estimated_body_height = estimated_body_max_y - estimated_body_min_y
 
     def is_anomalously_positioned(part_info, other_part_info, estimated_min_y, estimated_max_y, estimated_height):
-        """
+        '''
         Checks if a part is anomalous based on its role and height
-        """
+        '''
         threshold_y = estimated_min_y + estimated_height * 0.5 
 
         #It is below the mean threshould Y and is higher than the other part
@@ -377,17 +389,17 @@ def correct_anatomical_anomalies(segm_mask, min_pixels_for_anomaly=100, proximit
                     min_fill_distance = fill_distance
                     best_fill_pid = current_pid
 
-            correct_mask[correct_mask == pid_to_remove] = best_fill_pid
+            correct_segm_mask[correct_segm_mask == pid_to_remove] = best_fill_pid
 
             removed_pids.add(pid_to_remove)
 
-    return correct_mask
+    return correct_segm_mask
 
 
 def fill_unlabeled_points(dict_segm_vids, vmesh):
-    """
+    '''
     Fills unlabeled points using the nearest classified neighbor
-    """
+    '''
 
     N = vmesh.shape[0]
     all_vids = np.arange(N)
@@ -411,27 +423,27 @@ def fill_unlabeled_points(dict_segm_vids, vmesh):
 
 
 def project_points(K, points_3d):
-    """
+    '''
     Porjects 3D points to 2D using the intrinsic matrix K
-    """
+    '''
 
     points_proj_homogeneous = points_3d @ K.T
     points_2d = points_proj_homogeneous[:,:2] / points_proj_homogeneous[:,2:3]
     return np.round(points_2d).astype(int)
 
 
-def align_rigid_transform(source_points, target_points):
-    """
-    Best-fit transform that maps source_points to target_points
+def align_rigid_transform(src_points, tgt_points):
+    '''
+    Best-fit transform that maps src_points to tgt_points
     using the Kabsch algorithm (rigid alignment via SVD)
-    """
+    '''
 
-    centroid_src = source_points.mean(axis=0)
-    centroid_tgt = target_points.mean(axis=0)
+    centroid_src = src_points.mean(axis=0)
+    centroid_tgt = tgt_points.mean(axis=0)
 
     #Center the points
-    src_centered = source_points - centroid_src
-    tgt_centered = target_points - centroid_tgt
+    src_centered = src_points - centroid_src
+    tgt_centered = tgt_points - centroid_tgt
 
     #Covariance matrix
     H = src_centered.T @ tgt_centered
@@ -450,47 +462,72 @@ def align_rigid_transform(source_points, target_points):
     return R, t
 
 
-def ransac_kabsch(source_points, target_points, threshold=0.02, min_inliers=3):
-    """
+def ransac_kabsch(src_points, tgt_points, threshold=0.02, min_inliers=3):
+    '''
     Exhaustive RANSAC with the Kabsch algorithm
     obtaining the inliers, points in pairs that agree with the estimated rigid transformation
-    """
+    '''
 
-    assert source_points.shape == target_points.shape
-    N = source_points.shape[0]
+    assert src_points.shape == tgt_points.shape
+    N = src_points.shape[0]
     best_inliers = []
 
     #Choose combination with more inliers that exceed the threshold
     for k in range(min_inliers, N+1):
         for idx in itertools.combinations(range(N), k):
             idx = list(idx)
-            src_sample = source_points[idx]
-            tgt_sample = target_points[idx]
+            src_sample = src_points[idx]
+            tgt_sample = tgt_points[idx]
 
             R_est, t_est = align_rigid_transform(src_sample, tgt_sample)
-            src_aligned = (R_est @ source_points.T).T + t_est
+            src_aligned = (R_est @ src_points.T).T + t_est
 
-            distances = np.linalg.norm(src_aligned - target_points, axis=1)
+            distances = np.linalg.norm(src_aligned - tgt_points, axis=1)
             inliers = [i for i, d in enumerate(distances) if d < threshold]
 
             if len(inliers) > len(best_inliers):
                 best_inliers = inliers
 
     if len(best_inliers) >= min_inliers:
-        return align_rigid_transform(source_points[best_inliers], target_points[best_inliers])
+        return align_rigid_transform(src_points[best_inliers], tgt_points[best_inliers])
     else:
-        return align_rigid_transform(source_points, target_points)
+        return align_rigid_transform(src_points, tgt_points)
+
+
+def chamfer_dist(x, y):
+    kdtree_y = scipy.spatial.cKDTree(y)
+    dist_x_to_y, _ = kdtree_y.query(x, k=1)
+    kdtree_x = scipy.spatial.cKDTree(x)
+    dist_y_to_x, _ = kdtree_x.query(y, k=1)
+    '''return np.mean(dist_x_to_y**2) + np.mean(dist_y_to_x**2)'''
+    return np.mean(dist_x_to_y) + np.mean(dist_y_to_x)
 
 
 #==================================================================================================
 
 
-print("-- INICIANDO ..")
+f_vids = lambda dict_segm_vids: torch.tensor(sorted(dict_segm_vids.keys()))
+
+f_vids_part = lambda dict_segm_vids, part: [vid
+    for vid, p in dict_segm_vids.items()
+        if p == part
+]
+
+
+#==================================================================================================
+
+
+print("\n... INICIANDO ...")
 dp_predictor_iuv = load_densepose()
-vstar, smpl_vert_segmentation = load_star()
+star, (pose, shape, trans), star_model, vstar, smpl_vert_segmentation = load_star()
+
+optimal_poses = []
+optimal_shapes = []
 
 for scanid, image, vmesh, K in load_scans():
-    print(f"-- PROCESANDO CAMARA {scanid} ..")
+    print(f"\n=== PROCESANDO CAMARA {scanid} ===")
+
+    print("Segmentando partes ...")
 
     #DensePose predictions
     dp_outputs_iuv = dp_predictor_iuv(image)
@@ -539,11 +576,6 @@ for scanid, image, vmesh, K in load_scans():
         for vid in smpl_vert_segmentation[smpl_part]
     }
 
-    f_vids_part = lambda dict_segm_vids, part: [vid
-        for vid, p in dict_segm_vids.items()
-            if p == part
-    ]
-
     #Centroids of each part
     centroids_parts_star = []
     centroids_parts_mesh = []
@@ -558,19 +590,125 @@ for scanid, image, vmesh, K in load_scans():
         centroids_parts_mesh.append(centroid_part_mesh)
 
     #Alignment
-    R, t = ransac_kabsch(np.array(centroids_parts_star), np.array(centroids_parts_mesh))
-    f_align_star_model = lambda star_model, R=R, t=t: (R @ star_model.detach().numpy()[0].T).T + t
 
-    #Export results
+    print("Alineando ...")
+
+    R, t = ransac_kabsch(np.array(centroids_parts_star), np.array(centroids_parts_mesh))
+    f_align_vstar = lambda vstar, R=R, t=t: (R @ vstar.T).T + t
+    f_align_star_model = lambda star_model: f_align_vstar(star_model.detach().numpy()[0])
+
+    #Export alignment results
     RESULTPATH = "results/main/"
     os.makedirs(RESULTPATH, exist_ok=True)
 
-    vids_mesh = torch.tensor(sorted(dict_segm_vids_mesh.keys()))
-    vmesh = vmesh[vids_mesh]
+    vmesh = vmesh[f_vids(dict_segm_vids_mesh)]
     trimesh.Trimesh(vertices=vmesh, vertex_colors=fixed_coloring_parts(dict_segm_vids_mesh), process=False
     ).export(RESULTPATH+scanid+"-mesh_segm.ply", file_type="ply")
 
-    vids_star = torch.tensor(sorted(dict_segm_vids_star.keys()))
-    aligned_vstar = ((R @ vstar.T).T + t)[vids_star]
-    trimesh.Trimesh(vertices=aligned_vstar, vertex_colors=fixed_coloring_parts(dict_segm_vids_star), process=False
+    aligned_vstar = f_align_vstar(vstar)[f_vids(dict_segm_vids_star)]
+    trimesh.Trimesh(vertices=aligned_vstar, vertex_colors=fixed_coloring_parts(dict_segm_vids_star), faces=extract_submesh_faces(star_model.f, f_vids(dict_segm_vids_star)), process=False,
     ).export(RESULTPATH+scanid+"-star_aligned_segm.ply", file_type="ply")
+
+    #Adjustment
+
+    print("Ajustando ...")
+
+    pose_optimal = pose
+    shape_optimal = shape
+    trans_optimal = trans
+
+    def objective_func(params, dict_segm_vids_mesh, dict_segm_vids_star, pose, shape, trans):
+        ivmesh = vmesh[f_vids(dict_segm_vids_mesh)]
+
+        i_params = 0
+        if pose == None:
+            pose = torch.tensor(params[:NTHETAS].reshape(1,-1), dtype=torch.float32)
+            i_params += NTHETAS
+        if shape == None:
+            shape = torch.tensor(params[i_params:i_params+NBETAS].reshape(1,-1), dtype=torch.float32)
+            i_params += NBETAS
+        if trans == None:
+            trans = torch.tensor(params[i_params:].reshape(1,-1), dtype=torch.float32)
+            i_params += NTRANS
+
+        star_model = star(pose, shape, trans)
+        ivstar = f_align_star_model(star_model)[f_vids(dict_segm_vids_star)]
+
+        loss = chamfer_dist(ivstar, ivmesh)
+        return loss
+
+    for i in range(1):
+        print(f"... iteracion {i}")
+
+        #Pose adjustment
+        print("... ... en pose")
+        pose_adjuster_result = scipy.optimize.minimize(
+            fun=objective_func,
+            x0=np.concatenate([
+                pose_optimal.squeeze(0).numpy(),
+            ]),
+            args=(dict_segm_vids_mesh, dict_segm_vids_star,
+                None, shape_optimal, trans_optimal
+            ),
+            method="SLSQP",
+            options={"maxiter":10}
+        )
+        pose_optimal_result = pose_adjuster_result.x
+        pose_optimal = torch.tensor(pose_optimal_result.reshape(1, -1), dtype=torch.float32)
+
+        #Shape adjustment
+        print("... ... en forma")
+        shape_adjuster_result = scipy.optimize.minimize(
+            fun=objective_func,
+            x0=np.concatenate([
+                shape_optimal.squeeze(0).numpy(),
+            ]),
+            args=(dict_segm_vids_mesh, dict_segm_vids_star,
+                pose_optimal, None, trans_optimal
+            ),
+            method="SLSQP",
+            options={"maxiter":50}
+        )
+        shape_optimal_result = shape_adjuster_result.x
+        shape_optimal = torch.tensor(shape_optimal_result.reshape(1, -1), dtype=torch.float32)
+
+        #Pose-Shape adjustment
+        print("... ... en pose y forma")
+        adjuster_result = scipy.optimize.minimize(
+            fun=objective_func,
+            x0=np.concatenate([
+                pose_optimal.squeeze(0).numpy(),
+                shape_optimal.squeeze(0).numpy(),
+            ]),
+            args=(dict_segm_vids_mesh, dict_segm_vids_star,
+                None, None, trans_optimal
+            ),
+            method="SLSQP",
+            options={"maxiter":20}
+        )
+        optimal_result = adjuster_result.x
+        pose_optimal = torch.tensor(optimal_result[:NTHETAS].reshape(1, -1), dtype=torch.float32)
+        shape_optimal = torch.tensor(optimal_result[NTHETAS:NTHETAS+NBETAS].reshape(1, -1), dtype=torch.float32)
+
+    optimal_poses.append(pose_optimal)
+    optimal_shapes.append(shape_optimal)
+
+    #Export adjustment results
+    star_model_optimal = star(pose_optimal, shape_optimal, trans_optimal)
+    optimal_aligned_vstar = f_align_star_model(star_model_optimal)
+
+    trimesh.Trimesh(vertices=optimal_aligned_vstar, faces=star_model_optimal.f, process=False
+    ).export(RESULTPATH+scanid+"-star_optimal.ply", file_type="ply")
+
+print("\n==============================")
+print("\n... CRREANDO MODELO ...")
+
+#Final model
+star_model_optimal = star(np.mean(optimal_poses()), np.mean(optimal_shapes), trans)
+optimal_aligned_vstar = f_align_star_model(star_model_optimal)
+
+#Export final model result
+trimesh.Trimesh(vertices=vstar, faces=star_model.f, process=False
+).export(RESULTPATH+"star.ply", file_type="ply")
+trimesh.Trimesh(vertices=optimal_aligned_vstar, faces=star_model_optimal.f, process=False
+).export(RESULTPATH+"star_optimal.ply", file_type="ply")
