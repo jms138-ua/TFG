@@ -1,3 +1,19 @@
+import numpy as np
+import torch
+import scipy
+import cv2
+import ot
+import trimesh
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+import os
+import time
+import itertools
+import json
+import xml
+import csv
+
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
 
@@ -5,36 +21,21 @@ from densepose import add_densepose_config
 
 from libs.STAR.star.pytorch.star import STAR
 
-import math
-import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import scipy
-import torch
-import cv2
-import trimesh
-
-import os
-import json
-import xml
-import csv
-import itertools
-
-
 #==================================================================================================
 
 
 #Evitar warnings a mitad de ejecucion
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, message="torch.meshgrid:.*indexing argument")
+warnings.filterwarnings("ignore", category=scipy.optimize.OptimizeWarning, message="Unknown solver options:*")
 torch.nn.Conv2d(3, 16, 3)(torch.randn(1, 3, 64, 64))
 
 
 #==================================================================================================
 
 
-DATASET = "data/testJorge4x6"
-RESULTPATH = "results/main/"
+DATASETPATH = "data/testJorge4x6"
+RESULTPATH = "results/main-temp/"
 os.makedirs(RESULTPATH, exist_ok=True)
 
 
@@ -56,6 +57,30 @@ DP_BODY_PARTS = {
     23: "Head", 24: "Head"
 }
 
+NTHETAS = 72 #number of pose parameters -> 24 joints with 3 rotation values ​​each
+NBETAS = 10 #number of shape parameters
+NTRANS = 3 #number of translation paramete
+
+POSE_BOUNDS = np.array([(-np.pi,np.pi)]*NTHETAS)
+SHAPE_BOUNDS = np.array([(-2.0,2.0)]*NBETAS)
+
+BODY_PART_TO_SMPL_POSE_INDICES = {
+    "Torso": list(range(0, 3)) + list(range(9, 12)) + list(range(18, 21)) + list(range(27, 30)),
+    "Upper Leg Left": list(range(3, 6)),
+    "Upper Leg Right": list(range(6, 9)),
+    "Lower Leg Left": list(range(12, 15)),
+    "Lower Leg Right": list(range(15, 18)),
+    "Left Foot": list(range(21, 24)) + list(range(30, 33)),
+    "Right Foot": list(range(24, 27)) + list(range(33, 36)),
+    "Head": list(range(36, 39)) + list(range(45, 48)),
+    "Upper Arm Left": list(range(39, 42)) + list(range(48, 51)),
+    "Upper Arm Right": list(range(42, 45)) + list(range(51, 54)),
+    "Lower Arm Left": list(range(54, 57)) + list(range(60, 63)),
+    "Lower Arm Right": list(range(57, 60)) + list(range(63, 66)),
+    "Left Hand": list(range(66, 69)),
+    "Right Hand": list(range(69, 72)),
+}
+
 DP_TO_SMPL = {
     "Torso": ["spine1", "spine2", "spine", "hips"],
     "Right Hand": ["rightHand", "rightHandIndex1"],
@@ -73,12 +98,7 @@ DP_TO_SMPL = {
     "Head": ["head", "neck"],
 }
 
-NTHETAS = 72 #number of pose parameters -> 24 joints with 3 rotation values ​​each
-NBETAS = 10 #number of shape parameters
-NTRANS = 3 #number of translation paramete
-
 CMAP = "tab20"
-
 
 #==================================================================================================
 
@@ -95,9 +115,9 @@ def load_densepose():
 
 
 def load_scans():
-    SCANPATH = DATASET+"/"
+    SCANPATH = DATASETPATH+"/"
 
-    with open(DATASET+".csv") as csvf:
+    with open(DATASETPATH+".csv") as csvf:
         scans = [[row["SCANID"], int(row["ROTATIONZ"])]
             for row in csv.DictReader(csvf)
         ]
@@ -106,7 +126,7 @@ def load_scans():
         image = cv2.imread(f"{SCANPATH}{scanid}-Color-1-calibrated.png")
 
         mesh = trimesh.load_mesh(f"{SCANPATH}{scanid}-MaskPointCloud-0.ply", file_type="ply", process=False)
-        vmesh = mesh.vertices
+        vmesh_scan = mesh.vertices
 
         cameraf = xml.etree.ElementTree.parse(f"{SCANPATH}cameras.xml")
         calib = {}
@@ -140,12 +160,12 @@ def load_scans():
             M_homogeneous = np.vstack([M, [0, 0, 1]])
             K = M_homogeneous @ K
 
-        yield scanid, image, vmesh, K
+        yield scanid, image, vmesh_scan, K
 
 
 def load_star():
     def getAPose(thetas):
-        deg2rad = math.pi / 180
+        deg2rad = np.pi / 180
         Apose = np.zeros(thetas)
         Apose[48:51] = np.multiply(deg2rad, [0,0,-70]) #Left shoulder
         Apose[51:54] = np.multiply(deg2rad, [0,0,70]) #Right shoulder
@@ -161,9 +181,31 @@ def load_star():
     shape = torch.zeros(1, NBETAS)
     trans = torch.zeros(1, NTRANS)
     star_model = star(pose, shape, trans)
-    vstar = star_model.detach().numpy()[0]
+    vstar_model = f_vstar(star_model)
 
-    return star, (pose, shape, trans), star_model, vstar, smpl_vert_segmentation
+    return star, (pose, shape, trans), star_model, vstar_model, smpl_vert_segmentation
+
+
+def load_synthetic_star(star, starparams):
+    pose, shape, trans = starparams
+
+    synt_shape = torch.tensor([
+        0.0, #linked to height
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0
+    ], dtype=torch.float32).unsqueeze(0)
+
+    synt_star_model = star(pose, synt_shape, trans)
+    synt_vstar_model = f_vstar(synt_star_model)
+
+    return synt_star_model, synt_vstar_model
 
 
 #==================================================================================================
@@ -440,12 +482,12 @@ def align_rigid_transform(src_points, tgt_points):
     using the Kabsch algorithm (rigid alignment via SVD)
     '''
 
-    centroid_src = src_points.mean(axis=0)
-    centroid_tgt = tgt_points.mean(axis=0)
+    src_centroid = src_points.mean(axis=0)
+    tgt_centroid = tgt_points.mean(axis=0)
 
     #Center the points
-    src_centered = src_points - centroid_src
-    tgt_centered = tgt_points - centroid_tgt
+    src_centered = src_points - src_centroid
+    tgt_centered = tgt_points - tgt_centroid
 
     #Covariance matrix
     H = src_centered.T @ tgt_centered
@@ -459,7 +501,7 @@ def align_rigid_transform(src_points, tgt_points):
         Vt[-1, :] *= -1
         R = Vt.T @ U.T
 
-    t = centroid_tgt - R @ centroid_src
+    t = tgt_centroid - R @ src_centroid
 
     return R, t
 
@@ -496,42 +538,62 @@ def ransac_kabsch(src_points, tgt_points, threshold=0.02, min_inliers=3):
         return align_rigid_transform(src_points, tgt_points)
 
 
-def chamfer_dist(x, y):
-    kdtree_y = scipy.spatial.cKDTree(y)
-    dist_x_to_y, _ = kdtree_y.query(x, k=1)
-    kdtree_x = scipy.spatial.cKDTree(x)
-    dist_y_to_x, _ = kdtree_x.query(y, k=1)
-    '''return np.mean(dist_x_to_y**2) + np.mean(dist_y_to_x**2)'''
-    return np.mean(dist_x_to_y) + np.mean(dist_y_to_x)
+def chamfer_dist(P, Q):
+    '''
+    #Version con vectorizacion completa
+    diff = P[:,np.newaxis,:] - Q[np.newaxis,:,:]
+    dist_matrix = np.linalg.norm(diff, axis=2)
+    min_dist_PQ = np.min(dist_matrix, axis=1)
+    min_dist_QP = np.min(dist_matrix, axis=0)
+    return np.mean(min_dist_PQ) + np.mean(min_dist_QP)
+    '''
+    kdtree_Q = scipy.spatial.cKDTree(Q)
+    dist_P_to_Q, _ = kdtree_Q.query(P, k=1)
+    kdtree_P = scipy.spatial.cKDTree(P)
+    dist_Q_to_P, _ = kdtree_P.query(Q, k=1)
+    return np.mean(dist_P_to_Q) + np.mean(dist_Q_to_P)
+
+
+def hausdorff_dist(P, Q):
+    '''
+    #Version con vectorizacion completa
+    diff = P[:,np.newaxis,:] - Q[np.newaxis,:,:]
+    dist_matrix = np.linalg.norm(diff, axis=2)
+    min_dist_PQ = np.min(dist_matrix, axis=1)
+    min_dist_QP = np.min(dist_matrix, axis=0)
+    return max(np.max(min_dist_PQ), np.max(min_dist_QP))
+    '''
+    kdtree_Q = scipy.spatial.cKDTree(Q)
+    dist_P_to_Q, _ = kdtree_Q.query(P, k=1)
+    kdtree_P = scipy.spatial.cKDTree(P)
+    dist_Q_to_P, _ = kdtree_P.query(Q, k=1)
+    return max(np.max(dist_P_to_Q), np.max(dist_Q_to_P))
 
 
 #==================================================================================================
 
 
-f_vids = lambda dict_segm_vids: torch.tensor(list(dict_segm_vids.keys()))
-
-f_vids_part = lambda dict_segm_vids, part: [vid
-    for vid, p in dict_segm_vids.items()
-        if p == part
-]
-
-
-#==================================================================================================
-
+f_vstar = lambda star_model: star_model.detach().numpy()[0]
 
 print("\n... INICIANDO ...")
+t0 = time.time()
+tsoptm = []
 dp_predictor_iuv = load_densepose()
-star, (pose, shape, trans), star_model, vstar, smpl_vert_segmentation = load_star()
+star, (pose, shape, trans), star_model, vstar_model, smpl_vert_segmentation = load_star()
+synt_star_model, synt_vstar_model = load_synthetic_star(star, (pose, shape, trans))
 
 print("\n==============================\n")
 print("... OBTENIENDO MODELOS DE ESCANEOS PARCIALES ...")
 
-optimal_poses = []
-optimal_shapes = []
+optm_poses = []
+optm_shapes = []
+optm_synt_poses = []
+optm_synt_shapes = []
 
-for scanid, image, vmesh, K in load_scans():
+for scanid, image, vmesh_scan, K in load_scans():
     print(f"\n=== PROCESANDO CAMARA {scanid} ===")
 
+    #SEGMENTATION
     print("Segmentando partes ...")
 
     #DensePose predictions
@@ -560,16 +622,24 @@ for scanid, image, vmesh, K in load_scans():
     dp_segm_mask_full = np.zeros(image.shape[:2])
     dp_segm_mask_full[y1:y2, x1:x2] = dp_segm_mask_resized
 
+    #Extrat vertices id functions
+    f_vids = lambda dict_segm_vids: torch.tensor(list(dict_segm_vids.keys()))
+    f_vids_part = lambda dict_segm_vids, part: [vid
+        for vid, p in dict_segm_vids.items()
+            if p == part
+    ]
+
     #Mesh dict
-    mesh_projected_points = project_points(K, vmesh)
+    proj_mesh = project_points(K, vmesh_scan)
     h, w = dp_segm_mask_full.shape[:2]
     dict_segm_vids_mesh = {
         vid: DP_BODY_PARTS[dp_segm_mask_full[v, u]]
-        for vid, (u, v) in enumerate(mesh_projected_points)
+        for vid, (u, v) in enumerate(proj_mesh)
             if 0 <= v < h and 0 <= u < w
             and dp_segm_mask_full[v, u] in DP_BODY_PARTS
     }
-    dict_segm_vids_mesh = fill_unlabeled_points(dict_segm_vids_mesh, vmesh)
+    dict_segm_vids_mesh = fill_unlabeled_points(dict_segm_vids_mesh, vmesh_scan)
+    vmesh = vmesh_scan[f_vids(dict_segm_vids_mesh)]
 
     #Parts
     visible_dp_parts = set(dict_segm_vids_mesh.values())
@@ -581,142 +651,241 @@ for scanid, image, vmesh, K in load_scans():
             for smpl_part in DP_TO_SMPL[dp_part]
                 for vid in smpl_vert_segmentation[smpl_part]
     }.items()))
+    vstar = vstar_model[f_vids(dict_segm_vids_star)]
+
+    #ALIGNMENT
+    print("Alineando ...")
 
     #Centroids of each part
-    centroids_parts_star = []
-    centroids_parts_mesh = []
-    for part in visible_dp_parts:
-        vids_mesh_part = f_vids_part(dict_segm_vids_mesh, part)
-        vids_star_part = f_vids_part(dict_segm_vids_star, part)
-
-        centroid_part_star = vstar[vids_star_part,:].mean(axis=0)
-        centroid_part_mesh = vmesh[vids_mesh_part].mean(axis=0)
-
-        centroids_parts_star.append(centroid_part_star)
-        centroids_parts_mesh.append(centroid_part_mesh)
-
-    #Alignment
-    print("Alineando ...")
+    centroids_parts_mesh = [
+        vmesh_scan[f_vids_part(dict_segm_vids_mesh, part)].mean(axis=0)
+        for part in visible_dp_parts
+    ]
+    centroids_parts_star = [
+        vstar_model[f_vids_part(dict_segm_vids_star, part)].mean(axis=0)
+        for part in visible_dp_parts
+    ]
 
     R, t = ransac_kabsch(np.array(centroids_parts_star), np.array(centroids_parts_mesh))
     f_align_vstar = lambda vstar, R=R, t=t: (R @ vstar.T).T + t
-    f_align_star_model = lambda star_model: f_align_vstar(star_model.detach().numpy()[0])
+    f_vstar_algined = lambda star_model: f_align_vstar(f_vstar(star_model))
 
     #Export alignment results
-    vmesh = vmesh[f_vids(dict_segm_vids_mesh)]
+    vmesh = vmesh_scan[f_vids(dict_segm_vids_mesh)]
     trimesh.Trimesh(vertices=vmesh, vertex_colors=fixed_coloring_parts(dict_segm_vids_mesh), process=False
     ).export(RESULTPATH+scanid+"-mesh_segm.ply", file_type="ply")
+    vstar_aligned = f_align_vstar(vstar)
+    trimesh.Trimesh(vertices=vstar_aligned, vertex_colors=fixed_coloring_parts(dict_segm_vids_star), faces=extract_submesh_faces(star_model.f, f_vids(dict_segm_vids_star)), process=False
+    ).export(RESULTPATH+scanid+"-star_segm_align.ply", file_type="ply");
 
-    aligned_vstar = f_align_vstar(vstar)[f_vids(dict_segm_vids_star)]
-    trimesh.Trimesh(vertices=aligned_vstar, vertex_colors=fixed_coloring_parts(dict_segm_vids_star), faces=extract_submesh_faces(star_model.f, f_vids(dict_segm_vids_star)), process=False,
-    ).export(RESULTPATH+scanid+"-star_aligned_segm.ply", file_type="ply")
-
-    #Adjustment
+    #ADJUSTMENT
     print("Ajustando ...")
 
-    pose_optimal = pose.clone()
-    shape_optimal = shape.clone()
-    trans_optimal = trans.clone()
-
-    def objective_func(params, dict_segm_vids_mesh, dict_segm_vids_star, pose, shape, trans):
-        ivmesh = vmesh[f_vids(dict_segm_vids_mesh)]
+    def objective_func(params, star, f_vstar, dict_segm_vids_star, pose, shape, trans, vmesh):
+        pose, pose_indices_to_minimize = pose
 
         i_params = 0
-        if pose == None:
-            pose = torch.tensor(params[:NTHETAS].reshape(1,-1), dtype=torch.float32)
-            i_params += NTHETAS
+        if pose_indices_to_minimize != None:
+            pose[:,pose_indices_to_minimize] = torch.tensor(params[:len(pose_indices_to_minimize)], dtype=torch.float32).unsqueeze(0)
+            i_params += len(pose_indices_to_minimize)
         if shape == None:
-            shape = torch.tensor(params[i_params:i_params+NBETAS].reshape(1,-1), dtype=torch.float32)
+            shape = torch.tensor(params[i_params:i_params+NBETAS], dtype=torch.float32).unsqueeze(0)
             i_params += NBETAS
         if trans == None:
-            trans = torch.tensor(params[i_params:].reshape(1,-1), dtype=torch.float32)
+            trans = torch.tensor(params[i_params:], dtype=torch.float32).unsqueeze(0)
             i_params += NTRANS
 
         star_model = star(pose, shape, trans)
-        ivstar = f_align_star_model(star_model)[f_vids(dict_segm_vids_star)]
+        vstar = f_vstar(star_model)[f_vids(dict_segm_vids_star)]
 
-        loss = chamfer_dist(ivstar, ivmesh)
+        loss = chamfer_dist(vstar, vmesh)
         return loss
 
-    for i in range(5):
-        print(f"... iteracion {i}")
+    pose_indices_to_minimize = sorted(set(
+        idx
+        for part in visible_dp_parts
+            for idx in BODY_PART_TO_SMPL_POSE_INDICES[part]
+    ))
+
+    t0optm = time.time()
+
+    optm_pose = pose.clone()
+    optm_shape = shape.clone()
+    optm_trans = trans.clone()
+
+    for i in range(1):
+        print(f"... iteracion global {i}")
 
         #Pose adjustment
         print("... ... en pose        ", end="\t -> ", flush=True)
         pose_adjuster_result = scipy.optimize.minimize(
             fun=objective_func,
             x0=np.concatenate([
-                pose_optimal.squeeze(0).numpy(),
+                optm_pose.squeeze(0).numpy()[pose_indices_to_minimize],
             ]),
-            args=(dict_segm_vids_mesh, dict_segm_vids_star,
-                None, shape_optimal, trans_optimal
+            args=(star, f_vstar_algined, dict_segm_vids_star,
+                (optm_pose, pose_indices_to_minimize), optm_shape, optm_trans,
+                vmesh
             ),
+            bounds=POSE_BOUNDS[pose_indices_to_minimize],
             method="SLSQP",
-            options={"maxiter":100}
+            options={"maxiter":5, "disp":False, "eps":1e-5, "ftol":1e-6, "xatol":1e-3, "fatol":1e-6}
         )
         print(f"perdida final: {pose_adjuster_result.fun}")
-        pose_optimal_result = pose_adjuster_result.x
-        pose_optimal = torch.tensor(pose_optimal_result.reshape(1, -1), dtype=torch.float32)
+        optm_pose[:,pose_indices_to_minimize] = torch.tensor(pose_adjuster_result.x, dtype=torch.float32).unsqueeze(0)
 
         #Shape adjustment
         print("... ... en forma       ", end="\t -> ", flush=True)
         shape_adjuster_result = scipy.optimize.minimize(
             fun=objective_func,
             x0=np.concatenate([
-                shape_optimal.squeeze(0).numpy(),
+                optm_shape.squeeze(0).numpy(),
             ]),
-            args=(dict_segm_vids_mesh, dict_segm_vids_star,
-                pose_optimal, None, trans_optimal
+            args=(star, f_vstar_algined, dict_segm_vids_star,
+                (optm_pose, None), None, optm_trans,
+                vmesh
             ),
+            bounds=SHAPE_BOUNDS,
             method="SLSQP",
-            options={"maxiter":500}
+            options={"maxiter":20, "disp":False, "eps":1e-5, "ftol":1e-6, "xatol":1e-3, "fatol":1e-6}
         )
         print(f"perdida final: {shape_adjuster_result.fun}")
-        shape_optimal_result = shape_adjuster_result.x
-        shape_optimal = torch.tensor(shape_optimal_result.reshape(1, -1), dtype=torch.float32)
+        optm_shape = torch.tensor(shape_adjuster_result.x, dtype=torch.float32).unsqueeze(0)
 
         #Pose-Shape adjustment
         print("... ... en pose y forma", end="\t -> ", flush=True)
         adjuster_result = scipy.optimize.minimize(
             fun=objective_func,
             x0=np.concatenate([
-                pose_optimal.squeeze(0).numpy(),
-                shape_optimal.squeeze(0).numpy(),
+                optm_pose.squeeze(0).numpy()[pose_indices_to_minimize],
+                optm_shape.squeeze(0).numpy(),
             ]),
-            args=(dict_segm_vids_mesh, dict_segm_vids_star,
-                None, None, trans_optimal
+            args=(star, f_vstar_algined, dict_segm_vids_star,
+                (optm_pose, pose_indices_to_minimize), None, optm_trans,
+                vmesh
             ),
+            bounds=np.concatenate((POSE_BOUNDS[pose_indices_to_minimize], SHAPE_BOUNDS)),
             method="SLSQP",
-            options={"maxiter":200}
+            options={"maxiter":10, "disp":False, "eps":1e-5, "ftol":1e-6, "xatol":1e-3, "fatol":1e-6}
         )
         print(f"perdida final: {adjuster_result.fun}")
-        optimal_result = adjuster_result.x
-        pose_optimal = torch.tensor(optimal_result[:NTHETAS].reshape(1, -1), dtype=torch.float32)
-        shape_optimal = torch.tensor(optimal_result[NTHETAS:NTHETAS+NBETAS].reshape(1, -1), dtype=torch.float32)
+        optm_pose[:,pose_indices_to_minimize] = torch.tensor(adjuster_result.x[:len(pose_indices_to_minimize)], dtype=torch.float32).unsqueeze(0)
+        optm_shape = torch.tensor(adjuster_result.x[len(pose_indices_to_minimize):len(pose_indices_to_minimize)+NBETAS], dtype=torch.float32).unsqueeze(0)
 
-    optimal_poses.append(pose_optimal.squeeze(0).numpy())
-    optimal_shapes.append(shape_optimal.squeeze(0).numpy())
+    #SYNTHETIC EXPERIMENTATION
+    print("Ajustando prueba sintetica ...")
+
+    syn_vstar = synt_vstar_model[f_vids(dict_segm_vids_star)]
+
+    optm_synt_pose = pose.clone()
+    optm_synt_shape = shape.clone()
+    optm_synt_trans = trans.clone()
+
+    for i in range(5):
+        print(f"... iteracion global {i}")
+
+        #Pose adjustment
+        print("... ... en pose        ", end="\t -> ", flush=True)
+        pose_adjuster_result = scipy.optimize.minimize(
+            fun=objective_func,
+            x0=np.concatenate([
+                optm_synt_pose.squeeze(0).numpy()[pose_indices_to_minimize],
+            ]),
+            args=(star, f_vstar, dict_segm_vids_star,
+                (optm_synt_pose, pose_indices_to_minimize), optm_synt_shape, optm_synt_trans,
+                syn_vstar
+            ),
+            bounds=POSE_BOUNDS[pose_indices_to_minimize],
+            method="SLSQP",
+            options={"maxiter":25, "disp":False, "eps":1e-5, "ftol":1e-6, "xatol":1e-3, "fatol":1e-6}
+        )
+        print(f"perdida final: {pose_adjuster_result.fun}")
+        optm_synt_pose[:,pose_indices_to_minimize] = torch.tensor(pose_adjuster_result.x, dtype=torch.float32).unsqueeze(0)
+
+        #Shape adjustment
+        print("... ... en forma       ", end="\t -> ", flush=True)
+        shape_adjuster_result = scipy.optimize.minimize(
+            fun=objective_func,
+            x0=np.concatenate([
+                optm_synt_shape.squeeze(0).numpy(),
+            ]),
+            args=(star, f_vstar, dict_segm_vids_star,
+                (optm_synt_pose, None), None, optm_synt_trans,
+                syn_vstar
+            ),
+            bounds=SHAPE_BOUNDS,
+            method="SLSQP",
+            options={"maxiter":125, "disp":False, "eps":1e-5, "ftol":1e-6, "xatol":1e-3, "fatol":1e-6}
+        )
+        print(f"perdida final: {shape_adjuster_result.fun}")
+        optm_synt_shape = torch.tensor(shape_adjuster_result.x, dtype=torch.float32).unsqueeze(0)
+
+        #Pose-Shape adjustment
+        print("... ... en pose y forma", end="\t -> ", flush=True)
+        adjuster_result = scipy.optimize.minimize(
+            fun=objective_func,
+            x0=np.concatenate([
+                optm_synt_pose.squeeze(0).numpy()[pose_indices_to_minimize],
+                optm_synt_shape.squeeze(0).numpy(),
+            ]),
+            args=(star, f_vstar, dict_segm_vids_star,
+                (optm_synt_pose, pose_indices_to_minimize), None, optm_synt_trans,
+                syn_vstar
+            ),
+            bounds=np.concatenate((POSE_BOUNDS[pose_indices_to_minimize], SHAPE_BOUNDS)),
+            method="SLSQP",
+            options={"maxiter":50, "disp":False, "eps":1e-5, "ftol":1e-6, "xatol":1e-3, "fatol":1e-6}
+        )
+        print(f"perdida final: {adjuster_result.fun}")
+        optm_synt_pose[:,pose_indices_to_minimize] = torch.tensor(adjuster_result.x[:len(pose_indices_to_minimize)], dtype=torch.float32).unsqueeze(0)
+        optm_synt_shape = torch.tensor(adjuster_result.x[len(pose_indices_to_minimize):len(pose_indices_to_minimize)+NBETAS], dtype=torch.float32).unsqueeze(0)
 
     #Export adjustment results
-    star_model_optimal = star(pose_optimal, shape_optimal, trans_optimal)
-    optimal_aligned_vstar = f_align_star_model(star_model_optimal)
+    optm_star_model = star(optm_pose, optm_shape, optm_trans)
+    optm_vstar_model_aligned = f_align_vstar(f_vstar(optm_star_model))
+    trimesh.Trimesh(vertices=optm_vstar_model_aligned, faces=optm_star_model.f, process=False
+    ).export(RESULTPATH+scanid+"-star_optm.ply", file_type="ply");
+    trimesh.Trimesh(syn_vstar, vertex_colors=fixed_coloring_parts(dict_segm_vids_star), faces=extract_submesh_faces(synt_star_model.f, f_vids(dict_segm_vids_star)), process=False
+    ).export(RESULTPATH+scanid+"-star_synt_segm.ply", file_type="ply");
+    optm_synt_star_model = star(optm_synt_pose, optm_synt_shape, optm_synt_trans)
+    optm_synt_vstar_model = f_vstar(optm_synt_star_model)
+    trimesh.Trimesh(vertices=optm_synt_vstar_model, faces=optm_synt_star_model.f, process=False
+    ).export(RESULTPATH+scanid+"-star_synt_optm.ply", file_type="ply");
 
-    trimesh.Trimesh(vertices=optimal_aligned_vstar, faces=star_model_optimal.f, process=False
-    ).export(RESULTPATH+scanid+"-star_optimal.ply", file_type="ply")
+    optm_poses.append(optm_pose.squeeze(0).numpy())
+    optm_shapes.append(optm_shape.squeeze(0).numpy())
+    optm_synt_poses.append(optm_synt_pose.squeeze(0).numpy())
+    optm_synt_shapes.append(optm_synt_shape.squeeze(0).numpy())
+
+    tsoptm.append(time.time()-t0optm)
 
 print("\n==============================\n")
 
-#Final model
-optimal_pose = torch.tensor(np.mean(optimal_poses, axis=0).reshape(1,-1), dtype=torch.float32)
-optimal_shape = torch.tensor(np.mean(optimal_shapes, axis=0).reshape(1,-1), dtype=torch.float32)
-star_model_optimal = star(optimal_pose, optimal_shape, trans)
-optimal_vstar = star_model_optimal.detach().numpy()[0]
+#Global model
+global_optm_pose = torch.tensor(np.mean(optm_poses, axis=0)).unsqueeze(0)
+global_optm_shape = torch.tensor(np.mean(optm_shapes, axis=0)).unsqueeze(0)
+global_optm_star_model = star(global_optm_pose, global_optm_shape, trans)
+global_synt_optm_pose = torch.tensor(np.mean(optm_synt_poses, axis=0)).unsqueeze(0)
+global_synt_optm_shape = torch.tensor(np.mean(optm_synt_shapes, axis=0)).unsqueeze(0)
+global_synt_optm_star_model = star(global_synt_optm_pose, global_synt_optm_shape, trans)
 
-#Export final model result
-trimesh.Trimesh(vertices=vstar, faces=star_model.f, process=False
+#Export global model result
+trimesh.Trimesh(vertices=vstar_model, faces=star_model.f, process=False
 ).export(RESULTPATH+"star.ply", file_type="ply")
-trimesh.Trimesh(vertices=optimal_vstar, faces=star_model_optimal.f, process=False
-).export(RESULTPATH+"star_optimal.ply", file_type="ply")
+global_optm_vstar = f_vstar(global_optm_star_model)
+trimesh.Trimesh(vertices=global_optm_vstar, faces=global_optm_star_model.f, process=False
+).export(RESULTPATH+"star_optm.ply", file_type="ply")
+trimesh.Trimesh(vertices=synt_vstar_model, faces=synt_star_model.f, process=False
+).export(RESULTPATH+"star_synt.ply", file_type="ply")
+global_synt_optm_vstar = f_vstar(global_synt_optm_star_model)
+trimesh.Trimesh(vertices=global_synt_optm_vstar, faces=global_optm_star_model.f, process=False
+).export(RESULTPATH+"star_synt_optm.ply", file_type="ply")
 
-print("... ^^ MODELO FINAL CREADO ^^ ...")
+vregistration = trimesh.load_mesh(DATASETPATH+"/Model.obj", file_type="obj", process=False).vertices
+
+print("... ^^ MODELOS FINALES CREADOS ^^ ...")
+print(f"Perdida: {chamfer_dist(global_optm_vstar, vregistration)}")
+print(f"Perdida sintetica: {chamfer_dist(global_synt_optm_vstar, synt_vstar_model)}")
+print(f"Tiempo de optimización: {sum(tsoptm)}")
+print(f"Tiempo total: {time.time()-t0}")
 print("\n==============================\n")

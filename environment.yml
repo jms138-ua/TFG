@@ -15,7 +15,8 @@ dependencies:
     - scipy
     - opencv
     - trimesh
-    - pip
+    - pip:
+        - pot
 
 #conda env create --file=environment.yml
 #conda env remove --name T4D
