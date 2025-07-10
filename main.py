@@ -35,7 +35,7 @@ torch.nn.Conv2d(3, 16, 3)(torch.randn(1, 3, 64, 64))
 
 
 DATASETPATH = "data/testJorge4x6"
-RESULTPATH = "results/main-temp/"
+RESULTPATH = "results/main/"
 os.makedirs(RESULTPATH, exist_ok=True)
 
 
@@ -506,7 +506,7 @@ def align_rigid_transform(src_points, tgt_points):
     return R, t
 
 
-def ransac_kabsch(src_points, tgt_points, threshold=0.02, min_inliers=3):
+def ransac_kabsch(src_points, tgt_points, threshold=0.02, min_inliers=5):
     '''
     Exhaustive RANSAC with the Kabsch algorithm
     obtaining the inliers, points in pairs that agree with the estimated rigid transformation
